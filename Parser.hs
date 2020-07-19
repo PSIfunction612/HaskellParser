@@ -12,6 +12,10 @@ anyChar = Parser f where
     f "" = []
     f (ch:chs)  = [(ch, chs)]
 
+class Applicative f => Alternative f where
+    empty :: f a
+    (<|>) :: f a -> f a -> f a
+
 instance Functor Parser where
     fmap f p = Parser (\s -> map (\(x, y) -> (f x, y)) $ apply p s) 
 
@@ -19,6 +23,15 @@ instance Applicative Parser where
     pure a = Parser $ \s -> [(a, s)]
     --  (<*>) :: f (a -> b) -> f a -> f b
     (<*>) pf ps = Parser $ \s ->  [ (f a, s'') | (f, s') <- apply pf s, (a, s'') <- apply ps s']
+
+instance Alternative Parser where
+    empty = Parser $ (\_ -> [])
+    (<|>) a b = Parser fun where
+        fun s = 
+            let pf = apply a s
+            in if null pf
+                then apply b s
+                else pf
 
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy pr = Parser foo where
